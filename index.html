@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cygnal Web Security Check</title>
+<meta name="description" content="A quick, plain-English security check for websites, web apps and phone apps.">
+<style>
+:root{--navy:#0b1f3a;--blue:#1f6fc5;--cyan:#6fd3e8;--ink:#14233a;--mute:#51627a;--line:#e3ebf5;--bg:#ffffff;--panel:#f5f9fd;--panelb:#c9d8ea;--warn:#fff8ec;--warnb:#f0cf93;--ok:#1b7f4b;--mid:#b26a00;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--ink:#e6eef9;--mute:#a7b6cb;--line:#22344d;--bg:#0a1626;--panel:#10233b;--panelb:#25405f;--warn:#2b2412;--warnb:#6b5420;--ok:#5fd49b;--mid:#f0b45a;--bad:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:16px}
+.top{background:#0b1f3a;color:#fff;padding:22px 22px;border-radius:12px;margin:8px 0 14px}
+.brand{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-weight:700}
+.top h1{margin:4px 0 6px;font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.1}
+.top p{margin:0;color:#d5e2f2}
+.box{border:1.5px solid var(--panelb);background:var(--panel);border-radius:10px;padding:12px 16px;margin:12px 0}
+.box h3{margin:0 0 4px;font-size:1.05rem}
+.box ul{margin:4px 0 0;padding-left:20px} .box li{margin:3px 0}
+.warn{background:var(--warn);border-color:var(--warnb)}
+h2{font-size:1.35rem;margin:26px 0 2px;padding-bottom:4px;border-bottom:3px solid var(--blue)}
+.sub{margin:4px 0 8px;color:var(--mute);font-size:.92rem}
+fieldset.item{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;border:0;border-bottom:1px solid var(--line);margin:0;padding:12px 0;min-width:0}
+.num{flex:0 0 28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:.9rem;text-align:center;line-height:28px;margin-top:2px}
+.txt{flex:1 1 260px;min-width:0}
+legend{padding:0;font-weight:700;display:block;float:none;width:100%}
+.txt span{display:block;color:var(--mute);font-size:.95rem;margin-top:2px}
+.ans{flex:0 0 auto;display:flex;gap:6px;flex-wrap:wrap}
+.ans label{cursor:pointer}
+.ans input{position:absolute;opacity:0;width:1px;height:1px}
+.ans label span{display:inline-block;padding:7px 13px;border:1.5px solid var(--blue);border-radius:999px;font-size:.9rem;color:var(--blue);background:transparent;font-weight:600}
+.ans input:focus-visible+span{outline:3px solid var(--cyan);outline-offset:2px}
+.ans input:checked+span{color:#fff;background:var(--blue)}
+.ans input[value=no]:checked+span{background:var(--bad);border-color:var(--bad)}
+.ans input[value=unsure]:checked+span{background:var(--mid);border-color:var(--mid)}
+.ans input[value=yes]:checked+span{background:var(--ok);border-color:var(--ok)}
+@media (max-width:560px){.ans{flex:1 1 100%;padding-left:40px}}
+.score{position:sticky;bottom:0;z-index:5;background:var(--navy);color:#fff;border-radius:12px 12px 0 0;padding:10px 16px;margin-top:22px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;box-shadow:0 -4px 14px rgba(0,0,0,.18)}
+.score b{color:var(--cyan)}
+.bar{flex:1 1 140px;height:8px;background:#27405f;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--cyan);transition:width .2s}
+#result{margin-top:0}
+#result .band{font-weight:700;font-size:1.1rem}
+.good{color:var(--ok)} .some{color:var(--mid)} .help{color:var(--bad)}
+.cta{background:#0b1f3a;color:#e4edf8;border-radius:12px;padding:16px 20px;margin:18px 0}
+.cta h3{margin:0 0 4px;color:var(--cyan)} .cta p{margin:4px 0}
+.cta a{color:#fff;font-weight:700}
+.btn{font:inherit;font-weight:600;border:1.5px solid var(--blue);background:transparent;color:var(--blue);border-radius:8px;padding:8px 14px;cursor:pointer;margin:4px 6px 0 0}
+.btn:hover{background:var(--blue);color:#fff}
+.small{color:var(--mute);font-size:.85rem}
+@media print{.score,.btn,.noprint{display:none!important}.ans input:checked+span{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-size:11pt}fieldset.item{break-inside:avoid}h2{break-after:avoid}}
+a.btn{display:inline-block;text-decoration:none;font-size:1rem;line-height:1.4}
+.btn.wa{background:#128c4a;border-color:#128c4a;color:#fff}
+.btn.wa:hover{background:#0d6e3a;border-color:#0d6e3a}
+.score .jump{color:#fff;font-weight:600;font-size:.9rem}
+.seccard{border:1.5px solid var(--panelb);background:var(--panel);border-radius:10px;padding:12px 16px;margin:14px 0 4px}
+.seccard.st-good{border-color:var(--ok)}.seccard.st-some{border-color:var(--mid)}.seccard.st-help{border-color:var(--bad)}
+.sc-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.sc-num{font-weight:800;font-size:1.15rem}
+.sbar{height:9px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0 6px}
+.sbar i{display:block;height:100%;background:var(--mute);transition:width .2s;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.st-good .sbar i{background:var(--ok)}.st-some .sbar i{background:var(--mid)}.st-help .sbar i{background:var(--bad)}
+.sc-msg{margin:0;font-size:.95rem}
+#fixbox h4{margin:16px 0 0;font-size:1.02rem}
+.fix{border:1px solid var(--line);border-left:5px solid var(--mute);border-radius:8px;padding:10px 14px;margin:10px 0;background:var(--bg)}
+.fix.p3{border-left-color:var(--bad)}.fix.p2{border-left-color:var(--mid)}
+.fx-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.8rem}
+.tag{font-weight:700;border:1.5px solid currentColor;border-radius:999px;padding:1px 9px}
+.t3{color:var(--bad)}.t2{color:var(--mid)}.t1{color:var(--mute)}
+.fx-where{color:var(--mute)}
+.fx-title{font-weight:700;margin:4px 0 2px}
+.fix p{margin:4px 0}
+.fix details{margin:4px 0}
+.fix summary{cursor:pointer;color:var(--blue);font-weight:600}
+.wa-mini{display:inline-block;margin-top:4px;font-size:.9rem;font-weight:600;color:var(--blue)}
+@media print{.wa-mini,#pdfmsg{display:none!important}.fix{break-inside:avoid}.fix details>*{display:block}}
+</style></head><body><div class="wrap">
+
+<header class="top"><div class="brand">Cygnal</div><h1>Web Security Check</h1><p>A quick check for websites, web apps and phone apps. Plain words. About 15 minutes.</p></header>
+
+<div class="box"><h3>How to use this check</h3><ul>
+<li>Read each question. Pick <b>Yes</b>, <b>No</b> or <b>Not sure</b>.</li>
+<li>If you are not sure, that counts as a No. Ask your web developer or host.</li>
+<li>Use Part 1 for websites. Use Part 2 for web apps. Use Part 3 for phone apps.</li>
+<li>Many sites are also web apps. If your site has logins, do Part 1 and Part 2.</li>
+<li>Each part gets its own score, and you get a fix list built from your answers.</li>
+<li>Your answers stay on this page. Nothing is sent anywhere unless you choose to WhatsApp us your results.</li></ul></div>
+
+<div class="box warn"><h3>Stay safe and fair</h3><ul>
+<li>Only check sites and apps that <b>you own</b> or have <b>written permission</b> to check.</li>
+<li>Never try to get into someone else's site or app.</li>
+<li>Do any testing on a test copy if you can, not on live customer data.</li></ul></div>
+
+<form id="f" onsubmit="return false">
+<section class="part"><h2>Part 1: Your website</h2><p class="sub">For any business website.</p>
+<fieldset class="item"><div class="num">1</div><div class="txt"><legend>Does your site show the padlock?</legend><span>The address starts with https. The browser shows no warnings.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does your site show the padlock?">
+<label><input type="radio" name="p1q1" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q1" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q1" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">2</div><div class="txt"><legend>Is everything up to date?</legend><span>Your site system (like WordPress), themes and plugins. Old ones are a common way in. Delete ones you do not use.</span></div>
+<div class="ans" role="radiogroup" aria-label="Is everything up to date?">
+<label><input type="radio" name="p1q2" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q2" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q2" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">3</div><div class="txt"><legend>Do you use strong, different passwords?</legend><span>Long and not used anywhere else. A password manager helps.</span></div>
+<div class="ans" role="radiogroup" aria-label="Do you use strong, different passwords?">
+<label><input type="radio" name="p1q3" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q3" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q3" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">4</div><div class="txt"><legend>Is two-step login turned on?</legend><span>Turn it on for your site admin, your hosting and your domain. It asks for a code as well as a password.</span></div>
+<div class="ans" role="radiogroup" aria-label="Is two-step login turned on?">
+<label><input type="radio" name="p1q4" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q4" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q4" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">5</div><div class="txt"><legend>Do only the right people have admin access?</legend><span>Remove old staff, old developers and anyone who left. Give each person their own login.</span></div>
+<div class="ans" role="radiogroup" aria-label="Do only the right people have admin access?">
+<label><input type="radio" name="p1q5" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q5" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q5" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">6</div><div class="txt"><legend>Have you changed the default admin name?</legend><span>Names like "admin" are easy to guess. Pick something else.</span></div>
+<div class="ans" role="radiogroup" aria-label="Have you changed the default admin name?">
+<label><input type="radio" name="p1q6" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q6" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q6" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">7</div><div class="txt"><legend>Do you have backups, and have you tried one?</legend><span>Backups should run by themselves and be kept away from the site. A backup you never tried may not work.</span></div>
+<div class="ans" role="radiogroup" aria-label="Do you have backups, and have you tried one?">
+<label><input type="radio" name="p1q7" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q7" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q7" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">8</div><div class="txt"><legend>Are your forms protected from spam?</legend><span>Contact forms should have spam protection. They should only take the details you need.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are your forms protected from spam?">
+<label><input type="radio" name="p1q8" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q8" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q8" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">9</div><div class="txt"><legend>Are old copies and test pages gone?</legend><span>Old test sites, spare copies and backup files left online can leak private things.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are old copies and test pages gone?">
+<label><input type="radio" name="p1q9" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q9" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q9" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">10</div><div class="txt"><legend>Does your domain renew on its own?</legend><span>If a domain runs out, someone else can take it. Switch on auto-renew. Keep the contact email current.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does your domain renew on its own?">
+<label><input type="radio" name="p1q10" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p1q10" value="no"><span>No</span></label>
+<label><input type="radio" name="p1q10" value="unsure"><span>Not sure</span></label></div></fieldset>
+</section>
+<section class="part"><h2>Part 2: Your web app</h2><p class="sub">A web app is a site where people log in and do things, like book, pay or see their account.</p>
+<fieldset class="item"><div class="num">1</div><div class="txt"><legend>Can people only see their own data?</legend><span>Make two test accounts, A and B. Log in as A. Open a record. Change the number in the address bar to one of B's. The app should say no.</span></div>
+<div class="ans" role="radiogroup" aria-label="Can people only see their own data?">
+<label><input type="radio" name="p2q1" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q1" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q1" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">2</div><div class="txt"><legend>Are admin pages blocked for normal users?</legend><span>Log in as a normal user. Try to open an admin page. It should be blocked. Mark Yes if it is blocked.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are admin pages blocked for normal users?">
+<label><input type="radio" name="p2q2" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q2" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q2" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">3</div><div class="txt"><legend>Does the app slow down guessing?</legend><span>After many wrong passwords, it should lock the account for a while or slow things down.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the app slow down guessing?">
+<label><input type="radio" name="p2q3" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q3" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q3" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">4</div><div class="txt"><legend>Are passwords stored safely?</legend><span>Ask your developer. Passwords must never be saved as plain text. They should be "hashed", which means scrambled so no one can read them.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are passwords stored safely?">
+<label><input type="radio" name="p2q4" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q4" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q4" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">5</div><div class="txt"><legend>Is two-step login offered?</legend><span>At least for admins. Better for everyone.</span></div>
+<div class="ans" role="radiogroup" aria-label="Is two-step login offered?">
+<label><input type="radio" name="p2q5" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q5" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q5" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">6</div><div class="txt"><legend>Does logout work, and do old logins expire?</legend><span>After you log out, the back button should not open your account. Idle sessions should end after a while.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does logout work, and do old logins expire?">
+<label><input type="radio" name="p2q6" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q6" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q6" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">7</div><div class="txt"><legend>Does the app check what people type in?</legend><span>Ask your developer. The server must check forms and search boxes. Error messages should be short and must not show code or database details.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the app check what people type in?">
+<label><input type="radio" name="p2q7" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q7" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q7" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">8</div><div class="txt"><legend>Are secret keys kept out of the code?</legend><span>Ask your developer. Passwords, API keys and database logins must not sit in the code or in public places.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are secret keys kept out of the code?">
+<label><input type="radio" name="p2q8" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q8" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q8" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">9</div><div class="txt"><legend>Are the tools the app uses kept up to date?</legend><span>Apps are built from many parts made by others. Old parts can have known holes. Someone should check them often.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are the tools the app uses kept up to date?">
+<label><input type="radio" name="p2q9" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q9" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q9" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">10</div><div class="txt"><legend>Does the app keep a record of odd activity?</legend><span>Failed logins and strange actions should be written down, and someone should look at them. Only keep the personal information you need (POPIA).</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the app keep a record of odd activity?">
+<label><input type="radio" name="p2q10" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p2q10" value="no"><span>No</span></label>
+<label><input type="radio" name="p2q10" value="unsure"><span>Not sure</span></label></div></fieldset>
+</section>
+<section class="part"><h2>Part 3: Your phone app</h2><p class="sub">For apps people install on a phone.</p>
+<fieldset class="item"><div class="num">1</div><div class="txt"><legend>Does the app only use secure connections?</legend><span>All data between the app and your server must travel over https.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the app only use secure connections?">
+<label><input type="radio" name="p3q1" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q1" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q1" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">2</div><div class="txt"><legend>Does the server check every request?</legend><span>Hiding a button in the app is not security. The server must check who the user is every time. Do the two-account test from Part 2.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the server check every request?">
+<label><input type="radio" name="p3q2" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q2" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q2" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">3</div><div class="txt"><legend>Are secret keys kept out of the app?</legend><span>Anyone can open an app file and look inside. Do not put passwords or private keys in it.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are secret keys kept out of the app?">
+<label><input type="radio" name="p3q3" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q3" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q3" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">4</div><div class="txt"><legend>Is login information stored safely on the phone?</legend><span>Ask your developer. It should use the phone's safe storage, not plain files.</span></div>
+<div class="ans" role="radiogroup" aria-label="Is login information stored safely on the phone?">
+<label><input type="radio" name="p3q4" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q4" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q4" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">5</div><div class="txt"><legend>Does the app ask only for what it needs?</legend><span>Check its permissions. Does it need the camera, contacts or location? If not, it should not ask.</span></div>
+<div class="ans" role="radiogroup" aria-label="Does the app ask only for what it needs?">
+<label><input type="radio" name="p3q5" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q5" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q5" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">6</div><div class="txt"><legend>Can you stop old app versions?</legend><span>If a version has a bad hole, you should be able to make people update.</span></div>
+<div class="ans" role="radiogroup" aria-label="Can you stop old app versions?">
+<label><input type="radio" name="p3q6" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q6" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q6" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">7</div><div class="txt"><legend>Is a lost or stolen phone covered?</legend><span>The app should have a lock (PIN or fingerprint). You should be able to end a user's login from the server.</span></div>
+<div class="ans" role="radiogroup" aria-label="Is a lost or stolen phone covered?">
+<label><input type="radio" name="p3q7" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q7" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q7" value="unsure"><span>Not sure</span></label></div></fieldset>
+<fieldset class="item"><div class="num">8</div><div class="txt"><legend>Are the app's tools kept up to date?</legend><span>Like Part 2, number 9. Old parts can have known holes.</span></div>
+<div class="ans" role="radiogroup" aria-label="Are the app&#x27;s tools kept up to date?">
+<label><input type="radio" name="p3q8" value="yes"><span>Yes</span></label>
+<label><input type="radio" name="p3q8" value="no"><span>No</span></label>
+<label><input type="radio" name="p3q8" value="unsure"><span>Not sure</span></label></div></fieldset>
+</section>
+</form>
+
+<div class="score" role="status" aria-live="polite"><span><b id="done">0</b> of 28 answered</span><div class="bar"><i id="barfill"></i></div><span>To fix: <b id="fix">0</b></span><a class="jump" href="#result">See results</a></div>
+
+<div class="box" id="result"><h3>Your score, part by part</h3><p id="band" class="band">Answer the questions above to see your score.</p>
+<div id="secsum"></div>
+<p class="small">Each part is scored on its own. Every No and Not sure counts as something to fix. Mostly fine: one fifth or fewer to fix. Some gaps: up to half to fix. Get help: more than half to fix. This is a simple guide, not an official rating.</p>
+<div class="noprint"><button class="btn" type="button" id="reset">Start again</button><button class="btn" type="button" id="pdf">Save PDF report</button><a class="btn wa" id="wa1" href="https://wa.me/27788747253" target="_blank" rel="noopener">WhatsApp Cygnal with my results</a></div>
+<p class="small noprint" id="pdfmsg" role="status"></p>
+<p class="small noprint">The WhatsApp button fills in a message with your scores and top fixes. Nothing is sent until you press send in WhatsApp.</p></div>
+
+<div class="box" id="fixbox"><h3>Your fix list</h3><div id="fixlist"><p class="small">Answer the questions and your fix list will appear here. It is built from your answers and put in order of what matters most.</p></div></div>
+
+<div class="box"><h3>What this check can and can't do</h3><p>This check finds common, easy problems. It can't find every weak spot. A proper security test looks deeper at your code, your logins and how your app handles data. Then it tells you what to fix first.</p></div>
+
+<div class="cta"><h3>Want us to check it properly?</h3><p>Cygnal tests websites, web apps and apps for weak spots. You get a clear list of what we found, why it matters and what to fix first.</p><p><a id="wa2" href="https://wa.me/27788747253" target="_blank" rel="noopener">Message us on WhatsApp: 078 874 7253</a></p><p class="small" style="color:#a9bcd4">Your scores and top fixes are filled in for you. Nothing is sent until you press send.</p></div>
+
+<p class="small">Cygnal · Website and web app security · South Africa. This guide is general information. It is not legal advice and does not promise your site is safe.</p>
+</div>
+<script>
+(function(){
+  var total=28, f=document.getElementById('f'), PHONE='27788747253', WA='https://wa.me/'+PHONE;
+  var SECS=[
+    {id:'p1',name:'Part 1: Your website',short:'Website'},
+    {id:'p2',name:'Part 2: Your web app',short:'Web app'},
+    {id:'p3',name:'Part 3: Your phone app',short:'Phone app'}
+  ];
+  /* [short name, priority 3=high 2=medium 1=low, what to do if the answer is No, how to find out if Not sure] */
+  var META={
+    p1q1:["Padlock (https)",3,"Ask your host to install an SSL certificate (many hosts give one free) and to send every page to https. Then open the site on your phone and check there is no warning.","Look at the address bar on your site. No padlock, or a warning, means No. If you cannot tell, ask your host to confirm the certificate is valid and when it expires."],
+    p1q2:["Updates",3,"Take a backup first. Then update your site system, theme and plugins, and delete any you do not use. Switch on auto-updates where your system offers them.","Log in to your admin area and look for an 'updates available' notice. Or ask your developer or host when the core system, themes and plugins were last updated."],
+    p1q3:["Strong, different passwords",2,"Change the passwords for your site admin, hosting, email and domain to long ones that are different from each other (a few random words works well). Keep them in a password manager. Start with any you have reused.","Ask yourself: have I used the same password for two of these accounts? If yes, count it as a No. You can also check your email address at haveibeenpwned.com."],
+    p1q4:["Two-step login",3,"Turn on two-step login (an authenticator app is better than SMS codes) for your site admin, your hosting and your domain registrar. Start with the email account that can reset all of them.","Log in to your site admin, your hosting and your domain account, and look in each one's security settings for two-step login. If you cannot find it, ask whoever set them up."],
+    p1q5:["Admin access",2,"Make a list of everyone who can log in to the site admin, hosting and domain. Remove old staff and old developers. Give each person their own login, never a shared one.","Open the Users page in your site admin and read every name. If you do not recognise one, count it as a No and ask your developer who it belongs to."],
+    p1q6:["Default admin name",1,"Create a new admin user with a different name, move your content over to it, then delete the 'admin' user. Do not use your business name or email name either.","Check the Users page in your admin. If you see 'admin', 'administrator' or your site name as a username, it is a No."],
+    p1q7:["Backups",3,"Set up automatic backups (daily or weekly) kept away from the site, for example in cloud storage and not only on the same server. Then restore one onto a test copy to prove it works.","Ask your host or developer: how often are backups taken, where are they kept, and when was a restore last tested? If nobody can answer, count it as a No."],
+    p1q8:["Form spam protection",1,"Add spam protection (such as a CAPTCHA or a hidden honeypot field) to every form. Ask only for the details you really need, in line with POPIA.","Send a test message through your contact form a few times and see where it goes. Ask your developer which spam protection the form uses."],
+    p1q9:["Old copies and test pages",2,"Take down old test sites, spare copies (like /old or /backup) and zip files left on the server. If you need a test site, put it behind a password.","Search Google for site:yourdomain.co.za and look for pages you do not know. Ask your host to list the folders and subdomains on your account."],
+    p1q10:["Domain auto-renew",2,"Switch on auto-renew at your domain registrar, check the payment card on file is current, and change the contact email to one you read every day.","Log in at your registrar (or look your domain up on a WHOIS site) to see the expiry date and whether auto-renew is on. If you do not know who your registrar is, find that out first."],
+    p2q1:["People see only their own data",3,"This is serious. Tell your developer today. Every request must be checked on the server to make sure the record belongs to the logged-in user, not just hidden from view. Retest with your two test accounts after the fix.","Do the two-account test: make accounts A and B, log in as A, and change the number in the address bar to one of B's. If B's data opens, it is a No. Only test your own app. If you would like us to test it, WhatsApp us."],
+    p2q2:["Admin pages blocked",3,"Have your developer check the user's role on the server for every admin page and action, not only hide the menu. Retest as a normal user, including typing the admin address straight into the browser.","Log in as a normal user and type an admin page address straight into the browser. If it opens, answer No."],
+    p2q3:["Slows down password guessing",2,"Limit login attempts: lock the account or add a delay after about five wrong tries, and consider a CAPTCHA. Do the same on the password reset page.","On a test account, enter a wrong password 10 times in a row. If nothing slows down or locks, it is a No."],
+    p2q4:["Passwords stored safely",3,"Ask your developer to store passwords with a modern hashing method such as bcrypt or Argon2, and to re-hash the old ones. If your app can ever email someone their old password, it is storing plain text and that must change.","Use 'forgot password' on a test account. If it emails your actual old password, it is a No. Otherwise ask your developer which hashing method is used (it should be bcrypt or Argon2)."],
+    p2q5:["Two-step login offered",2,"Add two-step login, starting with admin accounts and then offering it to every user. Login services such as Auth0 or Firebase have it ready made.","Log in as an admin and look in the account settings for two-step login. If it is not there, answer No."],
+    p2q6:["Logout and session expiry",2,"Make logout end the session on the server, not just clear the screen. End idle sessions after a while (for example 15 to 30 minutes for admin areas). Retest with the back button.","Log in, log out, then press the back button. If your account opens again, answer No. Also leave a session idle for an hour and see if it still works."],
+    p2q7:["Checks what people type in",3,"Ask your developer to check all input on the server and use safe (parameterised) database queries. Turn off detailed error messages on the live site so no code or database details show.","Ask your developer how forms and search boxes are checked on the server. On a test copy of your own app, see whether a bad entry shows a long error with code or database words. If it does, it is a No."],
+    p2q8:["Secret keys out of the code",3,"Move passwords, API keys and database logins out of the code into environment variables or a secrets store. If any were ever in the code or in a public place like GitHub, treat them as leaked and change them now.","Ask your developer where the keys are kept, and whether the code sits anywhere public like GitHub. If keys are in the code, it is a No."],
+    p2q9:["App tools up to date",2,"Ask your developer to run a check for known holes in the parts the app uses (for example npm audit, or GitHub Dependabot) and update what it finds. Set a reminder to do this every month.","Ask your developer when the app's parts were last updated and who checks them for known holes. No clear answer means No."],
+    p2q10:["Record of odd activity",1,"Record failed logins, password resets and admin actions, and have someone look at them or get alerts. Keep personal details out of the logs and only what you need (POPIA).","Ask your developer whether failed logins are written down and who reads them. If nobody looks, it is a No."],
+    p3q1:["Secure connections only",3,"Make the app talk to your server only over https and block plain http. Ask your developer to turn on the phone's built-in protection (App Transport Security on iPhone, network security config on Android).","Ask your developer whether any server address in the app starts with http:// and whether plain connections are blocked."],
+    p3q2:["Server checks every request",3,"Move every permission check to the server. Repeat the two-account test from Part 2 using the app, and fix every request that does not check who is asking.","Do the two-account test from Part 2 on the app's data, and ask your developer whether the server checks the user on every request."],
+    p3q3:["Secret keys out of the app",3,"Take passwords and private keys out of the app and keep them on your server. Any key that was already inside a released app should be changed, because people can pull it out.","Ask your developer whether any passwords, API keys or private keys are built into the app. Anything inside the app file can be read by others."],
+    p3q4:["Login stored safely on phone",2,"Keep login tokens in the iPhone Keychain or the Android Keystore, not in plain files or settings. Do not keep passwords on the phone at all.","Ask your developer where the app keeps the login token. The right answer is Keychain (iPhone) or Keystore (Android)."],
+    p3q5:["Asks only for what it needs",1,"Remove any permission the app does not truly use (camera, contacts, location). Ask for the rest only when the feature is used, with a clear reason.","Look at the app's permissions in your phone settings or store listing and match each one to a real feature."],
+    p3q6:["Can stop old app versions",2,"Add a minimum-version check: when the app opens, the server says if it is too old and shows an 'Update required' screen. Test it before you need it.","Ask your developer: if we found a serious hole tomorrow, could we make everyone update? If not, it is a No."],
+    p3q7:["Lost or stolen phone covered",2,"Add a PIN or fingerprint lock to the app, make login tokens expire, and build a way for you to end a user's login from the server.","Open the app after closing it and see if it asks for a PIN or fingerprint. Ask your developer if you can end a user's login from the server."],
+    p3q8:["App tools up to date",2,"Ask your developer to check the app's libraries and SDKs for known holes and update them, and to repeat this before every new release.","Ask your developer when the app's libraries (SDKs) were last updated and whether they are checked for known holes before each release."]
+  };
+  var PL=['','Low priority','Medium priority','High priority'];
+
+  var qs=[];
+  f.querySelectorAll('fieldset.item').forEach(function(fs,i){
+    var name=fs.querySelector('input').name, m=META[name];
+    qs.push({name:name,sec:name.slice(0,2),num:fs.querySelector('.num').textContent.trim(),title:fs.querySelector('legend').textContent.trim(),short:m[0],p:m[1],no:m[2],ask:m[3],i:i});
+  });
+  var parts=f.querySelectorAll('section.part');
+  SECS.forEach(function(s,idx){
+    s.qs=qs.filter(function(q){return q.sec===s.id;});
+    var d=document.createElement('div'); d.className='seccard'; d.id='sc-'+s.id;
+    parts[idx].appendChild(d);
+  });
+
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function getState(){var s={};f.querySelectorAll('input[type=radio]:checked').forEach(function(r){s[r.name]=r.value;});return s;}
+  function bandOf(fix,n){var r=fix/n; return r<=0.2?'good':(r<=0.5?'some':'help');}
+  var BANDTXT={good:'Mostly fine',some:'Some gaps',help:'Get help'};
+  var BANDMSG={good:'Fix the few items in your list, then think about a proper test.',some:'Start with the high priority items in your fix list.',help:'Many gaps. A proper check will save you time.'};
+  function stats(s,state){
+    var o={n:s.qs.length,yes:0,no:0,unsure:0,answered:0};
+    s.qs.forEach(function(q){var v=state[q.name]; if(!v)return; o.answered++; o[v]++;});
+    o.ok=o.yes; o.fix=o.no+o.unsure; o.done=(o.answered===o.n); o.band=o.done?bandOf(o.fix,o.n):null; return o;
+  }
+  function getItems(state){
+    var items=[];
+    qs.forEach(function(q){var v=state[q.name]; if(v&&v!=='yes'){items.push({q:q,val:v,p:q.p});}});
+    items.sort(function(a,b){ if(b.p!==a.p)return b.p-a.p; if(a.val!==b.val)return a.val==='no'?-1:1; return a.q.i-b.q.i; });
+    return items;
+  }
+  function secLine(s,st){
+    if(st.answered===0) return '<p class="sc-msg small">Not started yet.</p>';
+    if(!st.done) return '<p class="sc-msg">Answered '+st.answered+' of '+st.n+'. So far '+st.ok+' OK and '+st.fix+' to fix.</p>';
+    return '<p class="sc-msg"><b class="'+st.band+'">'+BANDTXT[st.band]+'.</b> '+st.fix+' to fix. '+BANDMSG[st.band]+'</p>';
+  }
+  function cardHTML(s,st){
+    return '<div class="sc-head"><b>'+esc(s.name)+' score</b><span class="sc-num">'+st.ok+' of '+st.n+' OK</span></div>'+
+      '<div class="sbar"><i style="width:'+(st.ok/st.n*100)+'%"></i></div>'+secLine(s,st);
+  }
+  function waLink(text){return WA+'?text='+encodeURIComponent(text);}
+  function waText(state,items){
+    var t='Hi Cygnal, I just did your Web Security Check.\n\n';
+    var any=Object.keys(state).length>0;
+    if(!any) return 'Hi Cygnal, I would like help checking the security of my website or app.';
+    SECS.forEach(function(s){
+      var st=stats(s,state);
+      if(st.answered===0) t+=s.short+': not done\n';
+      else if(!st.done) t+=s.short+': '+st.ok+' of '+st.n+' OK so far ('+st.answered+' answered)\n';
+      else t+=s.short+': '+st.ok+' of '+st.n+' OK - '+BANDTXT[st.band]+'\n';
+    });
+    if(items.length){
+      t+='\nTop things to fix:\n';
+      items.slice(0,6).forEach(function(it){t+='- '+it.q.short+' ('+(it.val==='no'?'No':'Not sure')+')\n';});
+    }
+    t+='\nCan you help me check it properly?';
+    return t;
+  }
+  function itemWA(it){
+    var s=SECS.filter(function(x){return x.id===it.q.sec;})[0];
+    return waLink('Hi Cygnal, I did your Web Security Check. '+s.name+', question '+it.q.num+' ("'+it.q.title+'"): I answered "'+(it.val==='no'?'No':'Not sure')+'". Can you help me with this?');
+  }
+  function itemHTML(it){
+    var s=SECS.filter(function(x){return x.id===it.q.sec;})[0];
+    var h='<div class="fix p'+it.p+'"><div class="fx-top"><span class="tag t'+it.p+'">'+PL[it.p]+'</span><span class="tag">'+(it.val==='no'?'No':'Not sure')+'</span><span class="fx-where">'+esc(s.short)+', question '+it.q.num+'</span></div>';
+    h+='<div class="fx-title">'+esc(it.q.title)+'</div>';
+    if(it.val==='no'){ h+='<p>'+esc(it.q.no)+'</p>'; }
+    else{ h+='<p><b>Find out first:</b> '+esc(it.q.ask)+'</p><details><summary>If it turns out to be a No</summary><p>'+esc(it.q.no)+'</p></details>'; }
+    h+='<a class="wa-mini" href="'+itemWA(it)+'" target="_blank" rel="noopener">Ask Cygnal about this on WhatsApp</a></div>';
+    return h;
+  }
+  function fixHTML(state,items){
+    if(!Object.keys(state).length) return '<p class="small">Answer the questions and your fix list will appear here. It is built from your answers and put in order of what matters most.</p>';
+    if(!items.length) return '<p><b class="good">Nothing to fix from your answers so far.</b> Keep it that way. This check only finds common, easy problems, so a proper test can still turn up things it cannot see.</p>';
+    var hi=items.filter(function(i){return i.p===3;}).length, ns=items.filter(function(i){return i.val==='unsure';}).length;
+    var h='<p>'+items.length+' to fix'+(hi?', <b>'+hi+' high priority</b>':'')+(ns?'. '+ns+' of these are "Not sure", so find out first':'')+'.</p>';
+    var first=items.slice(0,5), rest=items.slice(5);
+    h+='<h4>Fix these first</h4>'+first.map(itemHTML).join('');
+    if(rest.length){ h+='<h4>Then fix these</h4>'+rest.map(itemHTML).join(''); }
+    return h;
+  }
+
+  function update(){
+    var state=getState(), answered=Object.keys(state).length, items=getItems(state), fix=items.length;
+    document.getElementById('done').textContent=answered;
+    document.getElementById('fix').textContent=fix;
+    document.getElementById('barfill').style.width=(answered/total*100)+'%';
+    var all='';
+    SECS.forEach(function(s){
+      var st=stats(s,state), html=cardHTML(s,st), cls='seccard'+(st.band?' st-'+st.band:'');
+      var c=document.getElementById('sc-'+s.id); c.className=cls; c.innerHTML=html;
+      all+='<div class="'+cls+'">'+html+'</div>';
+    });
+    document.getElementById('secsum').innerHTML=all;
+    var b=document.getElementById('band');
+    if(answered===0){ b.className='band'; b.textContent='Answer the questions above to see your score.'; }
+    else if(answered<total){ b.className='band'; b.textContent=answered+' of '+total+' answered. So far: '+fix+' to fix. You can skip a part that does not apply to you.'; }
+    else if(fix<=3){ b.className='band good'; b.textContent='All parts done: '+fix+' to fix in total. A good start.'; }
+    else if(fix<=8){ b.className='band some'; b.textContent='All parts done: '+fix+' to fix in total. Some gaps.'; }
+    else { b.className='band help'; b.textContent='All parts done: '+fix+' to fix in total. Get help.'; }
+    document.getElementById('fixlist').innerHTML=fixHTML(state,items);
+    var link=waLink(waText(state,items));
+    document.getElementById('wa1').href=link; document.getElementById('wa2').href=link;
+  }
+
+  /* ---------- Real PDF, built in the browser (no downloads, no libraries) ---------- */
+  function makePDF(state,items){
+    var W=595.28,H=841.89,M=46,CW=W-2*M,BOT=H-56;
+    var NAVY=[11,31,58],CYAN=[111,211,232],WHITE=[255,255,255],INK=[20,35,58],MUTE=[81,98,122],OK=[27,127,75],MID=[178,106,0],BAD=[179,38,30],LINE=[227,235,245];
+    var BC={good:OK,some:MID,help:BAD};
+    var pages=[],cur,y,cv=document.createElement('canvas').getContext('2d');
+    function np(){cur={c:[],links:[]};pages.push(cur);y=M;}
+    function clean(s){return String(s).replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/[\u2013\u2014]/g,'-').replace(/\u2026/g,'...').replace(/\u00b7/g,'-').replace(/[^\x20-\x7e]/g,'');}
+    function pe(s){return s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');}
+    function col(c){return (c[0]/255).toFixed(3)+' '+(c[1]/255).toFixed(3)+' '+(c[2]/255).toFixed(3);}
+    function wd(s,size,bold){cv.font=(bold?'bold ':'')+size+'px Arial, Helvetica, sans-serif';return cv.measureText(s).width*1.04;}
+    function wrap(s,size,bold,maxW){var words=clean(s).split(/\s+/),lines=[],l='';words.forEach(function(w){if(!w)return;var t=l?l+' '+w:w;if(l&&wd(t,size,bold)>maxW){lines.push(l);l=w;}else l=t;});if(l)lines.push(l);return lines;}
+    function put(s,x,yb,size,bold,c){cur.c.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf '+col(c)+' rg '+x.toFixed(2)+' '+(H-yb).toFixed(2)+' Td ('+pe(clean(s))+') Tj ET');}
+    function rect(x,yt,w,h,c){cur.c.push(col(c)+' rg '+x.toFixed(2)+' '+(H-yt-h).toFixed(2)+' '+w.toFixed(2)+' '+h.toFixed(2)+' re f');}
+    function need(h){if(y+h>BOT)np();}
+    function para(s,o){o=o||{};var size=o.size||10,lh=size*1.42,x=M+(o.indent||0),mw=CW-(o.indent||0);
+      wrap(s,size,o.bold,mw).forEach(function(t){need(lh);put(t,x,y+size,size,o.bold,o.color||INK);y+=lh;});y+=(o.after==null?5:o.after);}
+    function heading(s){need(40);y+=8;put(s,M,y+14,14,true,NAVY);y+=20;rect(M,y,CW,1.5,CYAN);y+=9;}
+    function statusText(st){
+      if(st.answered===0) return 'Not answered';
+      if(!st.done) return 'Answered '+st.answered+' of '+st.n+'. So far '+st.ok+' OK and '+st.fix+' to fix.';
+      return BANDTXT[st.band]+'. '+st.fix+' to fix. '+BANDMSG[st.band];
+    }
+
+    np();
+    rect(0,0,W,86,NAVY); put('CYGNAL',M,34,9,true,CYAN); put('Web Security Check: your report',M,62,20,true,WHITE);
+    y=86+16;
+    var d=new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
+    para('Report date: '+d,{size:9,color:MUTE,after:8});
+    var answered=Object.keys(state).length;
+    para('You answered '+answered+' of '+total+' questions. '+items.length+' need attention'+(items.filter(function(i){return i.p===3;}).length?', including '+items.filter(function(i){return i.p===3;}).length+' high priority.':'.'),{size:11,bold:true,after:4});
+    para('Every No and Not sure counts as something to fix. Each part is scored on its own.',{size:9.5,color:MUTE});
+
+    heading('Score by part');
+    SECS.forEach(function(s){
+      var st=stats(s,state), c=st.band?BC[st.band]:MUTE;
+      need(52);
+      put(s.name,M,y+11,11,true,INK);
+      var sc=st.ok+' of '+st.n+' OK'; put(sc,W-M-wd(sc,11,true),y+11,11,true,c);
+      y+=17; rect(M,y,CW,7,LINE); if(st.ok>0)rect(M,y,CW*st.ok/st.n,7,c); y+=14;
+      para(statusText(st),{size:9.5,color:MUTE,after:8});
+    });
+
+    heading('Your fix list');
+    if(!items.length){ para('Nothing to fix from your answers. This check only finds common, easy problems, so a proper test can still find things it cannot see.'); }
+    else{
+      var first=items.slice(0,5), rest=items.slice(5);
+      var group=function(label,arr){
+        if(!arr.length)return; need(30); put(label,M,y+11,11,true,INK); y+=18;
+        arr.forEach(function(it){
+          var s=SECS.filter(function(x){return x.id===it.q.sec;})[0], c=it.p===3?BAD:(it.p===2?MID:MUTE);
+          var tag=PL[it.p].toUpperCase()+'  |  '+(it.val==='no'?'No':'Not sure')+'  |  '+s.short+', question '+it.q.num;
+          var tl=wrap(it.q.title,10.5,true,CW-16);
+          var body=(it.val==='no')?[['',it.q.no]]:[['Find out first: ',it.q.ask],['If it is a No: ',it.q.no]];
+          var bl=body.map(function(b){return wrap(b[0]+b[1],9.5,false,CW-16);});
+          var h=14+tl.length*14.7+bl.reduce(function(a,l){return a+l.length*13.5+3;},0)+8;
+          need(h); var top=y;
+          rect(M,top,3,h-4,c);
+          put(tag,M+10,y+9,8,true,c); y+=14;
+          tl.forEach(function(t){put(t,M+10,y+10.5,10.5,true,INK);y+=14.7;});
+          bl.forEach(function(lines){lines.forEach(function(t){put(t,M+10,y+9.5,9.5,false,INK);y+=13.5;});y+=3;});
+          y+=8;
+        });
+      };
+      group('Fix these first',first); group('Then fix these',rest);
+    }
+
+    var good=[];
+    SECS.forEach(function(s){var ok=s.qs.filter(function(q){return state[q.name]==='yes';}).map(function(q){return q.short;}); if(ok.length)good.push(s.short+': '+ok.join(', '));});
+    if(good.length){ heading('What you already do well'); good.forEach(function(g){para(g,{size:9.5});}); }
+
+    need(86); y+=10;
+    rect(M,y,CW,70,NAVY);
+    put('Want us to check it properly?',M+14,y+24,13,true,CYAN);
+    put('WhatsApp Cygnal on 078 874 7253  ('+WA+')',M+14,y+44,10,true,WHITE);
+    put('Clear list of what we found, why it matters and what to fix first.',M+14,y+58,8.5,false,[213,226,242]);
+    cur.links.push({x:M,yt:y,w:CW,h:70,uri:WA});
+    y+=80;
+    para('This check finds common, easy problems and cannot find every weak spot. It is general information, not legal advice, and does not promise your site or app is safe. Your answers were not sent anywhere.',{size:8,color:MUTE});
+
+    pages.forEach(function(p,i){cur=p;put('Cygnal Web Security Check  -  page '+(i+1)+' of '+pages.length,M,H-28,8,false,MUTE);});
+
+    var objs=[];function add(s){objs.push(s);return objs.length;}
+    add(null);add(null);
+    var f1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    var f2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    var kids=[];
+    pages.forEach(function(p){
+      var body=p.c.join('\n');
+      var cid=add('<< /Length '+body.length+' >>\nstream\n'+body+'\nendstream');
+      var an=p.links.map(function(l){var by=H-l.yt-l.h;return add('<< /Type /Annot /Subtype /Link /Rect ['+l.x.toFixed(2)+' '+by.toFixed(2)+' '+(l.x+l.w).toFixed(2)+' '+(by+l.h).toFixed(2)+'] /Border [0 0 0] /A << /S /URI /URI ('+l.uri+') >> >>');});
+      kids.push(add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 '+f1+' 0 R /F2 '+f2+' 0 R >> >> /Contents '+cid+' 0 R'+(an.length?' /Annots ['+an.map(function(a){return a+' 0 R';}).join(' ')+']':'')+' >>'));
+    });
+    objs[0]='<< /Type /Catalog /Pages 2 0 R >>';
+    objs[1]='<< /Type /Pages /Kids ['+kids.map(function(k){return k+' 0 R';}).join(' ')+'] /Count '+kids.length+' >>';
+    var out='%PDF-1.4\n',offs=[];
+    objs.forEach(function(o,i){offs.push(out.length);out+=(i+1)+' 0 obj\n'+o+'\nendobj\n';});
+    var xr=out.length;
+    out+='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n';
+    offs.forEach(function(o){out+=('0000000000'+o).slice(-10)+' 00000 n \n';});
+    out+='trailer\n<< /Size '+(objs.length+1)+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF';
+    var bytes=new Uint8Array(out.length);for(var i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i)&255;
+    return new Blob([bytes],{type:'application/pdf'});
+  }
+
+  var pdfUrl=null;
+  document.getElementById('pdf').addEventListener('click',function(){
+    var state=getState(), msg=document.getElementById('pdfmsg');
+    if(!Object.keys(state).length){ msg.textContent='Answer at least one question first, then save your report.'; return; }
+    try{
+      var blob=makePDF(state,getItems(state));
+      if(pdfUrl)URL.revokeObjectURL(pdfUrl);
+      pdfUrl=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=pdfUrl; a.download='Cygnal-Security-Check-Report.pdf'; document.body.appendChild(a); a.click(); a.remove();
+      msg.innerHTML='Your PDF report is ready. If the download did not start, <a href="'+pdfUrl+'" target="_blank" rel="noopener">open the PDF here</a> and save it from there.';
+    }catch(e){
+      msg.textContent='The PDF could not be made here, so your browser\'s print window is opening. Choose "Save as PDF" as the printer.';
+      setTimeout(function(){window.print();},300);
+    }
+  });
+
+  f.addEventListener('change',update);
+  document.getElementById('reset').addEventListener('click',function(){ f.reset(); document.getElementById('pdfmsg').textContent=''; update(); window.scrollTo({top:0,behavior:'smooth'}); });
+  update();
+})();
+</script></body></html>
